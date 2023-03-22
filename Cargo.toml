@@ -2,6 +2,8 @@
 name = "chatgpt_cli"
 version = "0.1.0"
 edition = "2021"
+description = "A small tool to access ChatGPT from the command line"
+license = "MIT"
 
 [[bin]]
 name = "chatgpt"
