@@ -17,4 +17,12 @@
 
 ## Command mode
 
-    TODO
+    ~/i/tiny_chatgpt_cli $ chatgpt cmd
+    Input the description of a command: get amount of lines in main.rs
+
+    > wc -l main.rs
+
+    To apply the command, input nothing. To not apply it, input something.
+
+    wc -l main.rs
+    136 main.rs
