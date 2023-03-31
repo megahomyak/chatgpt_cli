@@ -2,7 +2,9 @@
 
 `cargo install tiny_chatgpt_cli`
 
-# Usage
+# Usage examples
+
+## Regular usage
 
     ~/i/tiny_chatgpt_cli $ chatgpt
     (i) Enter an empty line to stop
@@ -12,3 +14,7 @@
     34 + 67 = 101
     >>>
     Used tokens amount: 59
+
+## Command mode
+
+    TODO
