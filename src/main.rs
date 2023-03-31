@@ -97,7 +97,7 @@ impl ChatGPT {
         add_system_message(&mut messages, "Reply only with the shell command, do not explain anything - any response from you is acceptable. Do not format your answer.");
         add_user_message(
             &mut messages,
-            &format!("\n\nMy OS is {os_info}. Write a command to {input}."),
+            &format!("My OS is {os_info}. Write a command to {input}."),
         );
         let response = self.prompt(&messages, 0.0);
         let response = get_response_text(&response);
