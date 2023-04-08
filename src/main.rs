@@ -124,7 +124,7 @@ fn main() {
         )
     });
     let token = format!("Bearer {}", token.trim());
-    let client = reqwest::blocking::Client::new();
+    let client = reqwest::blocking::Client::builder().timeout(None).build();
     let chatgpt = ChatGPT { client, token };
     match args.action {
         None => chatgpt.chat(),
