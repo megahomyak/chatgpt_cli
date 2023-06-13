@@ -3,10 +3,6 @@ use std::io::Write;
 use clap::{Parser, Subcommand};
 use serde_json::json;
 
-fn error_panic(response: &serde_json::Value) -> ! {
-    panic!("There was an error requesting an API: {:?}", response);
-}
-
 struct ChatGPT {
     client: reqwest::blocking::Client,
     token: String,
@@ -47,7 +43,10 @@ fn add_system_message(messages: &mut Vec<serde_json::Value>, content: &str) {
 
 fn get_response_text(server_response: &serde_json::Value) -> &str {
     let reply = &server_response["choices"][0]["message"];
-    reply["content"].as_str().unwrap().trim()
+    reply["content"]
+        .as_str()
+        .unwrap_or_else(|| panic!("content is not a string, response: {}", server_response))
+        .trim()
 }
 
 impl ChatGPT {
@@ -124,7 +123,10 @@ fn main() {
         )
     });
     let token = format!("Bearer {}", token.trim());
-    let client = reqwest::blocking::Client::builder().timeout(None).build().unwrap();
+    let client = reqwest::blocking::Client::builder()
+        .timeout(None)
+        .build()
+        .unwrap();
     let chatgpt = ChatGPT { client, token };
     match args.action {
         None => chatgpt.chat(),
