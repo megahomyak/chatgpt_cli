@@ -110,7 +110,7 @@ impl ChatGPT {
         let response = self.prompt(&messages, 0.0);
         let response = get_response_text(&response);
         println!("You can edit the command before applying it:");
-        let Ok(input) = self.input("", &format!("> {response}")) else {
+        let Ok(input) = self.input("> ", response) else {
             return;
         };
         subprocess::Exec::shell(input).join().unwrap();
