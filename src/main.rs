@@ -1,11 +1,11 @@
-use std::io::Write;
-
 use clap::{Parser, Subcommand};
+use rustyline::{error::ReadlineError, history::FileHistory};
 use serde_json::json;
 
 struct ChatGPT {
     client: reqwest::blocking::Client,
     token: String,
+    editor: rustyline::Editor<(), FileHistory>,
 }
 
 #[derive(Parser)]
@@ -19,14 +19,6 @@ struct CmdLineArgs {
 enum Action {
     Chat,
     Cmd,
-}
-
-fn input(prompt: &str) -> String {
-    let mut input = String::new();
-    print!("{}", prompt);
-    std::io::stdout().flush().unwrap();
-    std::io::stdin().read_line(&mut input).unwrap();
-    input.trim().into()
 }
 
 fn add_assistant_message(messages: &mut Vec<serde_json::Value>, content: &str) {
@@ -69,12 +61,27 @@ impl ChatGPT {
             .unwrap()
     }
 
-    fn chat(&self) {
+    fn input(&mut self, prompt: &str, initial: &str) -> Result<String, ()> {
+        match self.editor.readline_with_initial(prompt, (initial, "")) {
+            Err(err) => Err(match err {
+                ReadlineError::Eof | ReadlineError::Interrupted => (),
+                _ => panic!("{}", err),
+            }),
+            Ok(line) => {
+                self.editor.add_history_entry(&line).unwrap();
+                Ok(line)
+            }
+        }
+    }
+
+    fn chat(&mut self) {
         let mut used_tokens_amount = 0;
         println!("(i) Enter an empty line to stop");
         let mut messages = Vec::new();
         loop {
-            let input = input(">>> ");
+            let Ok(input) = self.input(">>> ", "") else {
+                break;
+            };
             if input.is_empty() {
                 println!("Used tokens amount: {}", used_tokens_amount);
                 break;
@@ -89,8 +96,10 @@ impl ChatGPT {
         }
     }
 
-    fn cmd(&self) {
-        let input = input("Input the description of a command: ");
+    fn cmd(&mut self) {
+        let Ok(input) = self.input("Input the description of a command: ", "") else {
+            return;
+        };
         let os_info = os_info::get();
         let mut messages = Vec::new();
         add_system_message(&mut messages, "Reply only with the shell command, do not explain anything - any response from you is acceptable. Do not format your answer.");
@@ -100,14 +109,11 @@ impl ChatGPT {
         );
         let response = self.prompt(&messages, 0.0);
         let response = get_response_text(&response);
-        println!("\n> {response}\n");
-        println!("To apply the command, input nothing. To not apply it, input something.");
-        if crate::input("") == "" {
-            println!("{}", response);
-            subprocess::Exec::shell(response).join().unwrap();
-        } else {
-            println!("Cancelled.")
-        }
+        println!("You can edit the command before applying it:");
+        let Ok(input) = self.input("", &format!("> {response}")) else {
+            return;
+        };
+        subprocess::Exec::shell(input).join().unwrap();
     }
 }
 
@@ -127,7 +133,11 @@ fn main() {
         .timeout(None)
         .build()
         .unwrap();
-    let chatgpt = ChatGPT { client, token };
+    let mut chatgpt = ChatGPT {
+        client,
+        token,
+        editor: rustyline::DefaultEditor::new().unwrap(),
+    };
     match args.action {
         None => chatgpt.chat(),
         Some(action) => match action {
